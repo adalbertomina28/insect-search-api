@@ -1,6 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import insects, proxy
+from routers import insects, proxy, identification
+import logging
+import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
+
+# Configurar logging
+log_level = os.getenv("LOG_LEVEL", "INFO")
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 app = FastAPI(
     title="Insectos API",
@@ -20,6 +33,7 @@ app.add_middleware(
 # Incluir routers
 app.include_router(insects.router)
 app.include_router(proxy.router)
+app.include_router(identification.router)
 
 @app.get("/")
 async def root():
