@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 Start the server with:
 ```bash
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 
 The server will start at `http://localhost:8000`
