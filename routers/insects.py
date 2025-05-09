@@ -38,26 +38,6 @@ async def search_insects(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{insect_id}")
-async def get_insect_details(
-    insect_id: int,
-    locale: str = Query("es", description="Language code (e.g., 'es' for Spanish, 'en' for English)")
-) -> InsectBase:
-    """
-    Get detailed information about a specific insect
-    """
-    service = get_inaturalist_service()
-    try:
-        data = await service.get_species_info(insect_id, locale=locale)
-        if not data.get("results"):
-            raise HTTPException(status_code=404, detail="Insect not found")
-            
-        return InsectBase(**data["results"][0])
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @router.get("/nearby")
 async def get_nearby_insects(
     lat: float = Query(..., description="Latitude"),
@@ -90,5 +70,25 @@ async def get_nearby_insects(
             longitude=lng,
             radius=radius
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{insect_id}")
+async def get_insect_details(
+    insect_id: int,
+    locale: str = Query("es", description="Language code (e.g., 'es' for Spanish, 'en' for English)")
+) -> InsectBase:
+    """
+    Get detailed information about a specific insect
+    """
+    service = get_inaturalist_service()
+    try:
+        data = await service.get_species_info(insect_id, locale=locale)
+        if not data.get("results"):
+            raise HTTPException(status_code=404, detail="Insect not found")
+            
+        return InsectBase(**data["results"][0])
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
