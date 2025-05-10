@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import insects, proxy, identification, cache
+from routers import insects, proxy, identification, cache, chatbot
 import logging
 import os
 from dotenv import load_dotenv
@@ -35,6 +35,7 @@ app.include_router(insects.router)
 app.include_router(proxy.router)
 app.include_router(identification.router)
 app.include_router(cache.router)
+app.include_router(chatbot.router)
 
 @app.get("/")
 async def root():
