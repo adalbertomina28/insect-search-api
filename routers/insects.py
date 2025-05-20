@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from services.inaturalist_service import INaturalistService
 from models.insect import InsectBase, InsectSearchResult, NearbySearchResult
 from services.service_provider import get_inaturalist_service
+from middleware.auth_middleware import get_current_user
 
 router = APIRouter(
     prefix="/api/insects",
@@ -92,3 +93,69 @@ async def get_insect_details(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/favorites/list", response_model=List[Dict[str, Any]])
+async def get_favorite_insects(
+    user_data: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get the list of favorite insects for the authenticated user
+    
+    This endpoint requires authentication. The user must provide a valid JWT token.
+    """
+    try:
+        # En una implementación real, aquí se consultaría la base de datos
+        # para obtener los insectos favoritos del usuario
+        # Por ahora, devolvemos una lista de ejemplo
+        
+        # Obtener el ID del usuario del token
+        user_id = user_data.get("id")
+        
+        # Lista de ejemplo (en una implementación real, se obtendría de la base de datos)
+        favorites = [
+            {"insect_id": 47219, "name": "Mariposa Monarca", "added_at": "2025-05-18T10:30:00Z"},
+            {"insect_id": 47224, "name": "Escarabajo Hércules", "added_at": "2025-05-17T14:20:00Z"},
+            {"insect_id": 47157, "name": "Abeja Melífera", "added_at": "2025-05-16T09:15:00Z"}
+        ]
+        
+        return favorites
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener insectos favoritos: {str(e)}")
+
+@router.post("/favorites/add/{insect_id}", response_model=Dict[str, Any])
+async def add_favorite_insect(
+    insect_id: int,
+    user_data: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Add an insect to the user's favorites list
+    
+    This endpoint requires authentication. The user must provide a valid JWT token.
+    """
+    try:
+        # En una implementación real, aquí se agregaría el insecto a la lista de favoritos
+        # del usuario en la base de datos
+        # Por ahora, devolvemos una respuesta de ejemplo
+        
+        # Obtener el ID del usuario del token
+        user_id = user_data.get("id")
+        
+        # Verificar primero si el insecto existe
+        service = get_inaturalist_service()
+        data = await service.get_species_info(insect_id, locale="es")
+        if not data.get("results"):
+            raise HTTPException(status_code=404, detail="Insecto no encontrado")
+        
+        insect_name = data["results"][0].get("name", "Insecto desconocido")
+        
+        return {
+            "success": True,
+            "message": f"Insecto '{insect_name}' agregado a favoritos",
+            "insect_id": insect_id,
+            "name": insect_name,
+            "added_at": "2025-05-18T21:30:00Z"  # En una implementación real, sería la fecha actual
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al agregar insecto a favoritos: {str(e)}")

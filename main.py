@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from routers import insects, proxy, identification, cache, chatbot
+from fastapi.responses import JSONResponse
+from routers import insects, proxy, identification, cache, chatbot, auth
+from middleware.auth_middleware import get_current_user, get_optional_user
 import logging
 import os
 from dotenv import load_dotenv
@@ -36,6 +38,7 @@ app.include_router(proxy.router)
 app.include_router(identification.router)
 app.include_router(cache.router)
 app.include_router(chatbot.router)
+app.include_router(auth.router)
 
 @app.get("/")
 async def root():
