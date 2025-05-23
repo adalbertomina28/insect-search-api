@@ -165,10 +165,18 @@ class InsectService:
             return {"success": False, "error": f"Unknown catalog: {catalog_name}"}
         
         try:
-            response = self.client.table(db_table).select("id, nombre as name").execute()
+            # Seleccionar solo los campos id y nombre
+            response = self.client.table(db_table).select("id, nombre").execute()
             
             if response.data:
-                return {"success": True, "items": response.data}
+                # Transformar los resultados para añadir el campo name requerido
+                transformed_items = []
+                for item in response.data:
+                    transformed_items.append({
+                        "id": item["id"],
+                        "name": item["nombre"]
+                    })
+                return {"success": True, "items": transformed_items}
             else:
                 return {"success": True, "items": []}
         except Exception as e:
