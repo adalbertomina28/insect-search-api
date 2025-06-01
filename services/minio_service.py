@@ -8,6 +8,7 @@ import tempfile
 import shutil
 import mimetypes
 from urllib.parse import urljoin
+from datetime import timedelta
 
 # Intentar importar python-magic, pero proporcionar una alternativa si falla
 try:
@@ -259,6 +260,47 @@ class MinioService:
                     os.unlink(temp_file_path)
                 except:
                     pass
+            raise
+
+    def generate_presigned_url(self, object_name, expires=3600):
+        """
+        Genera una URL firmada temporal para acceder a un objeto en MinIO.
+        
+        Args:
+            object_name: Nombre del objeto en MinIO
+            expires: Tiempo de expiración en segundos (por defecto: 1 hora)
+            
+        Returns:
+            str: URL firmada temporal
+        """
+        try:
+            # Si el objeto_name incluye el nombre del bucket, extraerlo
+            if '/' in object_name and object_name.split('/')[0] == self.bucket_name:
+                object_name = '/'.join(object_name.split('/')[1:])
+                
+            # Verificar si el objeto existe
+            try:
+                self.client.stat_object(self.bucket_name, object_name)
+            except S3Error as e:
+                if e.code == 'NoSuchKey':
+                    logger.error(f"El objeto {object_name} no existe en el bucket {self.bucket_name}")
+                    return None
+                raise
+                
+            # Generar URL firmada
+            # Convertir el entero expires (segundos) a un objeto timedelta
+            expires_delta = timedelta(seconds=expires)
+            url = self.client.presigned_get_object(
+                self.bucket_name,
+                object_name,
+                expires=expires_delta
+            )
+            
+            logger.info(f"URL firmada generada para {object_name} con expiración de {expires} segundos")
+            return url
+            
+        except Exception as e:
+            logger.error(f"Error al generar URL firmada: {e}")
             raise
 
 # Instancia singleton del servicio
