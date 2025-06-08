@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from typing import List
 from uuid import UUID
 import logging
@@ -88,7 +88,7 @@ async def update_observation(observation_id: UUID, observation: ObservationUpdat
     
     return {"observation": result["observation"]}
 
-@router.delete("/{observation_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{observation_id}")
 async def delete_observation(observation_id: UUID, insect_service: InsectService = Depends(get_insect_service)):
     """Delete an observation"""
     result = await insect_service.delete_observation(str(observation_id))
@@ -99,4 +99,7 @@ async def delete_observation(observation_id: UUID, insect_service: InsectService
             detail=result.get("error", "Observation not found")
         )
     
-    return None
+    # Crear una respuesta vacía con código 204 y Content-Length: 0
+    response = Response(status_code=status.HTTP_204_NO_CONTENT, content=b"")
+    response.headers["Content-Length"] = "0"
+    return response

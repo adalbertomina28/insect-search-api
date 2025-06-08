@@ -101,24 +101,52 @@ class InsectService:
         # Handle location separately
         if "ubicacion" in data and data["ubicacion"]:
             try:
-                point_str = data["ubicacion"]
+                point_data = data["ubicacion"]
                 # Manejar diferentes formatos posibles de PostGIS
-                if isinstance(point_str, str):
+                if isinstance(point_data, str):
+                    # Verificar si es formato WKB hexadecimal
+                    if point_data.startswith('0101') and len(point_data) > 20:
+                        # Importar shapely solo cuando sea necesario
+                        try:
+                            from shapely import wkb
+                            import binascii
+                            # Convertir de hexadecimal a binario y luego a objeto Point
+                            binary_data = binascii.unhexlify(point_data)
+                            point = wkb.loads(binary_data)
+                            result["longitude"] = point.x
+                            result["latitude"] = point.y
+                            logger.info(f"Successfully parsed WKB point: lon={point.x}, lat={point.y}")
+                        except ImportError:
+                            logger.error("Shapely library not available for WKB parsing")
+                            result["longitude"] = 0.0
+                            result["latitude"] = 0.0
+                        except Exception as e:
+                            logger.error(f"Error parsing WKB data: {e}")
+                            result["longitude"] = 0.0
+                            result["latitude"] = 0.0
                     # Formato WKT: POINT(lng lat)
-                    coords = point_str.replace("POINT(", "").replace(")", "").split()
-                    if len(coords) == 2:
-                        result["longitude"] = float(coords[0])
-                        result["latitude"] = float(coords[1])
-                elif hasattr(point_str, 'x') and hasattr(point_str, 'y'):
+                    elif point_data.startswith('POINT'):
+                        coords = point_data.replace("POINT(", "").replace(")", "").split()
+                        if len(coords) == 2:
+                            result["longitude"] = float(coords[0])
+                            result["latitude"] = float(coords[1])
+                            logger.info(f"Successfully parsed WKT point: lon={coords[0]}, lat={coords[1]}")
+                elif hasattr(point_data, 'x') and hasattr(point_data, 'y'):
                     # Objeto Point de PostGIS
-                    result["longitude"] = float(point_str.x)
-                    result["latitude"] = float(point_str.y)
-                elif isinstance(point_str, dict) and 'coordinates' in point_str:
+                    result["longitude"] = float(point_data.x)
+                    result["latitude"] = float(point_data.y)
+                    logger.info(f"Successfully parsed Point object: lon={point_data.x}, lat={point_data.y}")
+                elif isinstance(point_data, dict) and 'coordinates' in point_data:
                     # Formato GeoJSON
-                    coords = point_str['coordinates']
+                    coords = point_data['coordinates']
                     if len(coords) == 2:
                         result["longitude"] = float(coords[0])
                         result["latitude"] = float(coords[1])
+                        logger.info(f"Successfully parsed GeoJSON: lon={coords[0]}, lat={coords[1]}")
+                else:
+                    logger.warning(f"Unrecognized location format: {type(point_data)}, value: {point_data}")
+                    result["longitude"] = 0.0
+                    result["latitude"] = 0.0
             except Exception as e:
                 logger.error(f"Error processing location: {e}")
                 # Asegurar que siempre tengamos valores por defecto para evitar errores de validación
